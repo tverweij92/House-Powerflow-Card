@@ -1208,7 +1208,7 @@
       );
       this._paths.battery?.setAttribute(
         "d",
-        "M 1008 635 L 1008 672 L 926 672 Q 878 672 878 650"
+        "M 1008 635 L 1008 672 L 914 672"
       );
 
       this._gridImportArrows?.setAttribute(
@@ -2875,7 +2875,7 @@
   }
 
   console.info(
-      "%c ENERGY-HOUSE-ALIGNED-V47-CARD %c v4.7.4 leiding-en-grondstop ",
+      "%c ENERGY-HOUSE-ALIGNED-V47-CARD %c v4.7.5 batterij-zijaansluiting ",
     "color:white;background:#2563eb;font-weight:700;padding:2px 5px",
     "color:#2563eb;background:#dbeafe;font-weight:700;padding:2px 5px"
   );
