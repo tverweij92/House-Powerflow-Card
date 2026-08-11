@@ -1200,15 +1200,15 @@
       );
       this._paths.gridImport?.setAttribute(
         "d",
-        "M 1050 720 L 1050 635"
+        "M 1050 704 L 1050 635"
       );
       this._paths.gridExport?.setAttribute(
         "d",
-        "M 1050 720 L 1050 635"
+        "M 1050 704 L 1050 635"
       );
       this._paths.battery?.setAttribute(
         "d",
-        "M 1008 635 L 930 635 Q 878 635 878 650"
+        "M 1008 635 L 1008 672 L 926 672 Q 878 672 878 650"
       );
 
       this._gridImportArrows?.setAttribute(
@@ -2875,7 +2875,7 @@
   }
 
   console.info(
-      "%c ENERGY-HOUSE-ALIGNED-V47-CARD %c v4.7.3 goot-en-kastprofiel ",
+      "%c ENERGY-HOUSE-ALIGNED-V47-CARD %c v4.7.4 leiding-en-grondstop ",
     "color:white;background:#2563eb;font-weight:700;padding:2px 5px",
     "color:#2563eb;background:#dbeafe;font-weight:700;padding:2px 5px"
   );
