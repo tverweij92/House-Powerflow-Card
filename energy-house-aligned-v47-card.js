@@ -291,7 +291,7 @@
           <div class="canvas">
             <svg
               class="scene"
-              viewBox="0 0 1536 1024"
+              viewBox="16 0 1504 1024"
               preserveAspectRatio="xMidYMid slice"
               aria-hidden="true"
             >
@@ -2875,7 +2875,7 @@
   }
 
   console.info(
-      "%c ENERGY-HOUSE-ALIGNED-V47-CARD %c v4.7.5 batterij-zijaansluiting ",
+      "%c ENERGY-HOUSE-ALIGNED-V47-CARD %c v4.7.6 randcrop ",
     "color:white;background:#2563eb;font-weight:700;padding:2px 5px",
     "color:#2563eb;background:#dbeafe;font-weight:700;padding:2px 5px"
   );
