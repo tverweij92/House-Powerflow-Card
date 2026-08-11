@@ -1,0 +1,34 @@
+type: custom:energy-house-aligned-v47-card
+title: Energieoverzicht
+subtitle: Live status
+
+automatic_images: true
+image_directory: /local/energy/images
+background_image: /local/energy/images/zon overdag.png
+image_version: nieuw-huis-v2
+
+weather: weather.buienradar
+weather_fade_ms: 1800
+
+solar_power: sensor.envoy_converter_current_power_production
+solar_production_today: sensor.envoy_converter_energy_production_today
+
+grid_power: sensor.p1_meter_power
+grid_import_today: sensor.zonneplan_electricity_consumption_today
+grid_export_today: sensor.zonneplan_electricity_returned_today
+gas_today: sensor.zonneplan_gas_consumption_today
+
+battery_charge_power: sensor.anker_solix_solarbank_max_ac_381_battery_charging_power
+battery_discharge_power: sensor.anker_solix_solarbank_max_ac_381_battery_discharging_power
+battery_soc: sensor.anker_solix_solarbank_max_ac_381_soc
+
+low_carbon_entity: sensor.energy_low_carbon_percentage
+statistics_source_mode: first
+
+animation_speed: 1
+refresh_minutes: 5
+navigation_path: /energy
+
+grid_options:
+  columns: 25
+  rows: 7
