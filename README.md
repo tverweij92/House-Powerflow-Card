@@ -5,7 +5,7 @@ A wide, animated Home Assistant Lovelace card for visualising live solar, grid a
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5)](https://hacs.xyz/)
 [![License: MIT](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-tverweij92-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/tverweij92)
+[![Support on Ko-fi](https://img.shields.io/badge/Support%20on%20Ko--fi-timverweij92-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/timverweij92)
 
 ![House Powerflow Card preview](docs/preview.png)
 
@@ -129,7 +129,7 @@ The intended Home Assistant Sections layout is `columns: 25` and `rows: 7`. Home
 
 ## Support the project
 
-If this card is useful to you, you can support future improvements at [buymeacoffee.com/tverweij92](https://www.buymeacoffee.com/tverweij92).
+If this card is useful to you, you can support future improvements at [ko-fi.com/timverweij92](https://ko-fi.com/timverweij92).
 
 ## License
 
