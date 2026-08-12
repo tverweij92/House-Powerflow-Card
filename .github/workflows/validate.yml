@@ -3,11 +3,22 @@ name: Validate card
 on:
   push:
   pull_request:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  validate-hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: HACS validation
+        uses: hacs/action@main
+        with:
+          category: plugin
+
   validate:
     runs-on: ubuntu-latest
     steps:
@@ -15,10 +26,25 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check JavaScript syntax
-        run: node --check energy-house-aligned-v47-card.js
+        run: node --check house-power-flow-card.js
+
+      - name: Verify distributable matches source
+        run: cmp house-power-flow-card.js dist/house-power-flow-card.js
+
+      - name: Run smoke tests
+        run: node tests/smoke.cjs
+
+      - name: Validate HACS metadata
+        run: |
+          node -e "const f=require('./hacs.json'); if(f.filename!=='house-power-flow-card.js'||!f.content_in_root) process.exit(1)"
+
+      - name: Verify required files
+        run: test -f README.md && test -f LICENSE && test -f examples/minimal.yaml && test -f docs/CONFIGURATION.md
 
       - name: Verify weather image set
         shell: bash
         run: |
-          count="$(find images -maxdepth 1 -type f -name '*.png' | wc -l)"
-          test "$count" -eq 34
+          source_count="$(find images -maxdepth 1 -type f -name '*.png' | wc -l)"
+          dist_count="$(find dist/images -maxdepth 1 -type f -name '*.png' | wc -l)"
+          test "$source_count" -eq 34
+          test "$dist_count" -eq 34

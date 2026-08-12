@@ -1,139 +1,148 @@
-# House Powerflow Card
+# House Power Flow Card
 
-A wide, animated Home Assistant Lovelace card for visualising live solar, grid and home-battery power around a weather-aware house scene.
+A visual Home Assistant dashboard card for live solar, grid, home and optional battery power flows. It can switch scenes for weather and configurable holidays while keeping the flow lines aligned.
 
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace-41BDF5?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Dashboard-41BDF5?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5)](https://hacs.xyz/)
 [![License: MIT](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
-[![Support on Ko-fi](https://img.shields.io/badge/Support%20on%20Ko--fi-timverweij92-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/timverweij92)
+[![Support on Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/timverweij92)
 
-![House Powerflow Card preview](docs/preview.png)
+![House Power Flow Card preview](docs/preview.png)
 
-## Highlights
+## What you can configure
 
-- Persistent, smooth flow animations that do not restart on every Home Assistant state update.
-- Separate solar, grid-import/grid-export and battery flows.
-- Live PV, grid, battery, home-use and gas values.
-- Daily self-sufficiency, self-consumed solar, solar production, grid import/export and low-carbon statistics.
-- A proportional three-colour home ring based on today's solar, battery and grid contribution.
-- 34 included day/evening backgrounds for weather, seasons and Dutch holidays.
-- Automatic cross-fade between matching backgrounds.
-- Full-screen view for tablets and wall displays.
-- Respects `prefers-reduced-motion`.
+- Solar and grid sensors; battery, gas and low-carbon data are optional.
+- Dutch or English automatically from Home Assistant, with starter translations for German, French and Spanish.
+- Holiday scenes on/off, per holiday on/off and editable start/end dates.
+- Standard image alignment or your own flow paths/coordinates for a different house image.
+- A support button and popup that can be disabled or pointed at another donation page.
+- Existing `custom:energy-house-aligned-v47-card` dashboards remain compatible.
 
-## Installation
+## Install with HACS (easiest)
 
-### Manual installation (recommended for the first setup)
+1. Open **HACS → Frontend**.
+2. Open the three-dot menu and choose **Custom repositories**.
+3. Add `https://github.com/tverweij92/House-Powerflow-Card` and choose **Dashboard**.
+4. Search for **House Power Flow Card**, install it and restart/refresh Home Assistant.
+5. Add a Manual card to your dashboard and paste the minimal example below. HACS installs the supplied scenes with the card.
 
-1. Download this repository as a ZIP and extract it.
-2. Copy `energy-house-aligned-v47-card.js` to:
-
-   ```text
-   /config/www/energy/energy-house-aligned-v47-card.js
-   ```
-
-3. Copy the complete `images` directory to:
-
-   ```text
-   /config/www/energy/images
-   ```
-
-4. In Home Assistant, open **Settings → Dashboards → Resources** and add:
-
-   ```text
-   /local/energy/energy-house-aligned-v47-card.js
-   ```
-
-   Resource type: **JavaScript module**.
-
-5. Reload the browser with `Ctrl+Shift+R`. If Home Assistant still uses a cached file, temporarily append a cache key such as `?v=1`. You only need to change that number after replacing the JavaScript file—not for normal use.
-
-### HACS custom repository
-
-You can also add this repository to HACS as a custom repository of type **Dashboard**. The JavaScript card can then be updated through HACS. The 34 backgrounds still need to be copied manually to `/config/www/energy/images`.
-
-## Card configuration
-
-Start with [examples/card.yaml](examples/card.yaml):
+After adding the card, Home Assistant also shows a simple visual editor for the main sensors, language, battery, holidays and support button. Advanced scene dates and flow coordinates remain in YAML so they stay transparent and portable.
 
 ```yaml
-type: custom:energy-house-aligned-v47-card
-title: Energieoverzicht
-subtitle: Live status
-
-automatic_images: true
-image_directory: /local/energy/images
-background_image: /local/energy/images/zon overdag.png
-image_version: nieuw-huis-v2
-
-weather: weather.buienradar
-weather_fade_ms: 1800
-
-solar_power: sensor.envoy_converter_current_power_production
-solar_production_today: sensor.envoy_converter_energy_production_today
-
-grid_power: sensor.p1_meter_power
-grid_import_today: sensor.zonneplan_electricity_consumption_today
-grid_export_today: sensor.zonneplan_electricity_returned_today
-gas_today: sensor.zonneplan_gas_consumption_today
-
-battery_charge_power: sensor.anker_solix_solarbank_max_ac_381_battery_charging_power
-battery_discharge_power: sensor.anker_solix_solarbank_max_ac_381_battery_discharging_power
-battery_soc: sensor.anker_solix_solarbank_max_ac_381_soc
-
-low_carbon_entity: sensor.energy_low_carbon_percentage
-statistics_source_mode: first
-
-animation_speed: 1
-refresh_minutes: 5
-navigation_path: /energy
-
-grid_options:
-  columns: 25
-  rows: 7
+type: custom:house-power-flow-card
+title: Energy overview
+solar_power: sensor.your_solar_power
+grid_power: sensor.your_grid_power
+weather: weather.home
 ```
 
-Replace the example entity IDs with the IDs from your own Home Assistant installation.
+Replace the example entity IDs with your own entities. Battery, gas and holiday scenes stay out of the way until you configure them.
 
-## Important sensor meanings
+## Add a battery
 
-| Option | Expected value |
-| --- | --- |
-| `solar_power` | Current total PV production in W or kW. |
-| `solar_production_today` | Today's accumulated solar production in kWh. |
-| `grid_power` | Signed live P1 power. Positive means import; negative means export. |
-| `grid_import_today` | Today's accumulated grid import in kWh. |
-| `grid_export_today` | Today's accumulated grid export in kWh. |
-| `gas_today` | Today's accumulated gas use in m³. |
-| `battery_charge_power` | Current battery charging power. |
-| `battery_discharge_power` | Current battery discharging power. |
-| `battery_soc` | Battery state of charge in percent. |
+```yaml
+modules:
+  battery: true
+battery_charge_power: sensor.battery_charge_power
+battery_discharge_power: sensor.battery_discharge_power
+battery_soc: sensor.battery_state_of_charge
+battery_capacity_kwh: 7
+```
 
-The card calculates current household consumption from solar, grid and battery flows. Do not point household consumption at the P1 sensor: the P1 sensor only measures exchange with the grid.
+Set `modules.battery: false` to hide it even when battery sensors are present. With `auto` (the default), it appears only when at least one battery sensor is configured.
 
-## Automatic backgrounds
+## Holiday scenes and custom date ranges
 
-The card selects a day or evening image using the weather entity, temperature and calendar date. The included set supports sun, clouds, rain, snow, frost, temperatures above 25 °C and several Dutch holidays. Special ranges include:
+Holiday scenes are off by default. This example enables Dutch defaults, keeps Christmas visible for two weeks and disables Sinterklaas:
 
-- Sinterklaas: 1–5 December
-- Christmas: 19–30 December
-- New Year: 31 December and 1 January
-- Mother's Day and Father's Day
-- Easter, Ascension Day, Pentecost, King's Day, Remembrance Day and Liberation Day
+```yaml
+holidays:
+  enabled: true
+  country: NL
+  date_format: european
+  items:
+    kerst:
+      enabled: true
+      start: "18-12"
+      end: "31-12"
+    sinterklaas:
+      enabled: false
+```
 
-All supplied scenes share the same house geometry and camera framing, so one flow-coordinate system remains aligned during image transitions.
+You can add your own fixed range. `image_name` must match the beginning of the supplied day/evening filenames:
 
-## Layout
+```yaml
+holidays:
+  enabled: true
+  date_format: european
+  ranges:
+    - name: birthday
+      image_name: feest
+      start: "10-08"
+      end: "14-08"
+      enabled: true
+```
 
-The intended Home Assistant Sections layout is `columns: 25` and `rows: 7`. Home Assistant may restrict the available width depending on the dashboard's maximum column setting. Give the card the full section width for the best result.
+The card then looks for `feest overdag.png` and `feest avond.png` in `image_directory`.
 
-## Support the project
+## Use another house image
 
-If this card is useful to you, you can support future improvements at [ko-fi.com/timverweij92](https://ko-fi.com/timverweij92).
+Set `automatic_images: false` and provide a background. For exact alignment, use SVG path strings or simple point coordinates in the image's `1536 × 1024` coordinate system:
+
+```yaml
+automatic_images: false
+background_image: /local/my-house.png
+layout:
+  preset: custom
+  coordinates:
+    solar:
+      - [100, 200]
+      - [650, 200]
+      - [850, 520]
+    gridImport:
+      - [100, 650]
+      - [850, 650]
+    gridExport:
+      - [850, 690]
+      - [100, 690]
+    battery:
+      - [950, 900]
+      - [950, 690]
+```
+
+See [the complete configuration guide](docs/CONFIGURATION.md) and the ready-to-copy files in [`examples`](examples/).
+
+## Support popup
+
+The heart button opens a small popup. Configure or hide it like this:
+
+```yaml
+support:
+  enabled: true
+  url: https://ko-fi.com/timverweij92
+  title: Support House Power Flow Card
+  message: Like the card? Help fund future improvements.
+```
+
+No link opens automatically; the visitor must click the button in the popup.
+
+## Upgrading from the old card
+
+The old JavaScript file and card type still work for now. For new dashboards use:
+
+```yaml
+type: custom:house-power-flow-card
+```
+
+After installing version 5 through HACS, change only the `type` line. Your existing sensor settings continue to work. Do not delete the old resource until the new card works on your dashboard.
+
+## Development and contributions
+
+The project intentionally uses one dependency-free JavaScript file so beginners can inspect it. Pull requests run a syntax check, verify HACS metadata and check the image set. Translation contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-- JavaScript and documentation: [MIT License](LICENSE)
-- Included background artwork: [CC BY-NC 4.0](LICENSE-ASSETS.md)
+- JavaScript and documentation: [MIT](LICENSE)
+- Included artwork: [CC BY-NC 4.0](LICENSE-ASSETS.md)
 
 Copyright © 2026 [tverweij92](https://github.com/tverweij92).

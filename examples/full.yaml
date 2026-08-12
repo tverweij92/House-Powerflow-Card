@@ -1,0 +1,55 @@
+type: custom:house-power-flow-card
+title: Energieoverzicht
+subtitle: Live status
+language: auto
+
+solar_power: sensor.your_solar_power
+solar_production_today: sensor.your_solar_energy_today
+grid_power: sensor.your_signed_grid_power
+grid_import_today: sensor.your_grid_import_today
+grid_export_today: sensor.your_grid_export_today
+gas_today: sensor.your_gas_today
+weather: weather.home
+low_carbon_entity: sensor.your_low_carbon_percentage
+
+battery_charge_power: sensor.your_battery_charge_power
+battery_discharge_power: sensor.your_battery_discharge_power
+battery_soc: sensor.your_battery_soc
+battery_capacity_kwh: 7
+
+modules:
+  solar: true
+  grid: true
+  battery: auto
+  gas: auto
+  low_carbon: auto
+
+automatic_images: true
+image_directory: /hacsfiles/House-Powerflow-Card/images
+image_version: v1
+weather_fade_ms: 1800
+
+holidays:
+  enabled: true
+  country: NL
+  date_format: european
+  items:
+    kerst:
+      start: "18-12"
+      end: "31-12"
+    sinterklaas:
+      enabled: false
+
+support:
+  enabled: true
+  url: https://ko-fi.com/timverweij92
+  title: Steun House Power Flow Card
+  message: Help je mee om nieuwe scènes en functies te maken?
+
+animation_speed: 0.5
+refresh_minutes: 5
+navigation_path: /energy
+
+grid_options:
+  columns: 25
+  rows: 7
