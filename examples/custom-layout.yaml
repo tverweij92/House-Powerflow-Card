@@ -1,0 +1,13 @@
+type: custom:house-power-flow-card
+solar_power: sensor.your_solar_power
+grid_power: sensor.your_grid_power
+automatic_images: false
+background_image: /local/my-house.png
+
+layout:
+  preset: custom
+  coordinates:
+    solar: [[100, 220], [600, 220], [850, 600]]
+    gridImport: [[100, 650], [850, 650]]
+    gridExport: [[850, 690], [100, 690]]
+    battery: [[950, 900], [950, 690]]

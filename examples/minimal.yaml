@@ -1,22 +1,17 @@
-# Kept as the familiar example filename. New users can start with minimal.yaml;
-# full.yaml contains every commonly used option.
 type: custom:house-power-flow-card
-title: Energieoverzicht
+title: Energy overview
 subtitle: Live status
-language: auto
 
+# Replace these with your own Home Assistant entity IDs.
 solar_power: sensor.your_solar_power
 grid_power: sensor.your_grid_power
 weather: weather.home
 
+# HACS installs the supplied scenes automatically.
 automatic_images: true
 image_directory: /hacsfiles/House-Powerflow-Card/images
 
-modules:
-  battery: auto
-  gas: auto
-  low_carbon: auto
-
+# Holiday scenes are opt-in.
 holidays:
   enabled: false
   country: NL
