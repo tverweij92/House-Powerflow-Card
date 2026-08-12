@@ -7,6 +7,8 @@ A visual Home Assistant dashboard card for live solar, grid, home and optional b
 [![License: MIT](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
 [![Support on Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/timverweij92)
 
+![All 34 included house scenes](docs/house-scenes.gif)
+
 ![House Power Flow Card preview](docs/preview.png)
 
 ## What you can configure
