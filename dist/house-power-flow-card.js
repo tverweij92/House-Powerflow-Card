@@ -1,4 +1,11 @@
 /*
+ * House Power Flow Card v5.2.1
+ * Generated from src/house-power-flow-card-base.js and
+ * src/house-power-flow-card-responsive.js.
+ * Run: node scripts/build-card.cjs
+ */
+
+/*
  * Energy House Overview Card
  * Drop-in Home Assistant Lovelace custom card.
  *
@@ -10,10 +17,12 @@
  */
 
 (() => {
-  const CARD_TAG = "house-power-flow-card";
+  // The responsive production class extends this internal base at the end of
+  // the generated bundle. Users only configure custom:house-power-flow-card.
+  const CARD_TAG = "house-power-flow-card-base";
   const LEGACY_CARD_TAG = "energy-house-aligned-v47-card";
   const SVG_NS = "http://www.w3.org/2000/svg";
-  const VERSION = "5.0.0-beta.7";
+  const VERSION = "5.2.1";
   const TRANSLATIONS = {
     en: {
       title: "Energy overview", title_test: "Energy overview test", live_status: "Live status",
@@ -45,11 +54,82 @@
   };
   const DEFAULT_HOLIDAYS = {
     nieuwjaar: { start: "12-31", end: "01-01" },
+    valentine: { start: "02-14", end: "02-14" },
+    halloween: { start: "10-31", end: "10-31" },
     koningsdag: { start: "04-27", end: "04-27" },
     dodenherdenking: { start: "05-04", end: "05-04" },
     bevrijdingsdag: { start: "05-05", end: "05-05" },
     sinterklaas: { start: "12-01", end: "12-05" },
     kerst: { start: "12-19", end: "12-30" }
+  };
+  const HOLIDAY_IMAGE_NAMES = {
+    nieuwjaar: "new-years",
+    koningsdag: "kings-day",
+    dodenherdenking: "remembrance-day",
+    bevrijdingsdag: "liberation-day",
+    sinterklaas: "sinterklaas",
+    kerst: "christmas",
+    pasen: "easter",
+    moederdag: "mothers-day",
+    hemelvaart: "ascension-day",
+    pinksteren: "pentecost",
+    vaderdag: "fathers-day",
+    valentine: "valentines-day",
+    halloween: "halloween",
+    birthday: "birthday",
+    "independence-day": "independence-day",
+    thanksgiving: "thanksgiving",
+    "memorial-day": "memorial-day",
+  };
+  const LEGACY_IMAGE_NAMES = {
+    "weather/hot-day.png": "25plus overdag.png",
+    "weather/hot-night.png": "25plus avond.png",
+    "weather/freezing-day.png": "-5 overdag.png",
+    "weather/freezing-night.png": "-5 avond.png",
+    "weather/sunny-day.png": "zon overdag.png",
+    "weather/sunny-night.png": "zon avond.png",
+    "weather/cloudy-day.png": "bewolkt overdag.png",
+    "weather/cloudy-night.png": "bewolkt avond.png",
+    "weather/rainy-day.png": "regen overdag.png",
+    "weather/rainy-night.png": "regen avond.png",
+    "weather/snowy-day.png": "sneeuw overdag.png",
+    "weather/snowy-night.png": "sneeuw avond.png",
+    "weather/hail-day.png": "hail day.png",
+    "weather/hail-night.png": "hail night.png",
+    "weather/mist-day.png": "mist day.png",
+    "weather/mist-night.png": "mist night.png",
+    "weather/pouring-day.png": "pouring day.png",
+    "weather/pouring-night.png": "pouring night.png",
+    "weather/windy-day.png": "windy day.png",
+    "weather/windy-night.png": "windy night.png",
+    "holidays/common/new-years-day.png": "new years day.png",
+    "holidays/common/new-years-night.png": "new years night.png",
+    "holidays/common/birthday-day.png": "birthday day.png",
+    "holidays/common/birthday-night.png": "birthday night.png",
+    "holidays/common/valentines-day-day.png": "valentine Day.png",
+    "holidays/common/valentines-day-night.png": "valentine night.png",
+    "holidays/common/halloween-day.png": "halloween day.png",
+    "holidays/common/halloween-night.png": "halloween night.png",
+    "holidays/nl/kings-day-day.png": "koningsdag overdag.png",
+    "holidays/nl/kings-day-night.png": "koningsdag avond.png",
+    "holidays/nl/remembrance-day-day.png": "dodenherdenking overdag.png",
+    "holidays/nl/remembrance-day-night.png": "dodenherdenking avond.png",
+    "holidays/nl/liberation-day-day.png": "bevrijdingsdag overdag.png",
+    "holidays/nl/liberation-day-night.png": "bevrijdingsdag avond.png",
+    "holidays/nl/sinterklaas-day.png": "sinterklaas overdag.png",
+    "holidays/nl/sinterklaas-night.png": "sinterklaas avond.png",
+    "holidays/common/christmas-day.png": "kerst overdag.png",
+    "holidays/common/christmas-night.png": "kerst avond.png",
+    "holidays/common/easter-day.png": "pasen overdag.png",
+    "holidays/common/easter-night.png": "pasen avond.png",
+    "holidays/common/mothers-day-day.png": "moederdag overdag.png",
+    "holidays/common/mothers-day-night.png": "moederdag avond.png",
+    "holidays/common/ascension-day-day.png": "hemelvaart overdag.png",
+    "holidays/common/ascension-day-night.png": "hemelvaart avond.png",
+    "holidays/common/pentecost-day.png": "pinksteren overdag.png",
+    "holidays/common/pentecost-night.png": "pinksteren avond.png",
+    "holidays/common/fathers-day-day.png": "vaderdag overdag.png",
+    "holidays/common/fathers-day-night.png": "vaderdag avond.png",
   };
   const DEFAULT_WEATHER_IMAGES = {
     sunny: "/local/energy/weather/sunny.png",
@@ -124,6 +204,8 @@
       this._pendingBackgroundUrl = "";
       this._backgroundTransitionToken = 0;
       this._flowTransitioning = false;
+      this._lastValidHomePower = Number.NaN;
+      this._lastValidHomePowerAt = 0;
 
       this._statistics = null;
       this._loadingStatistics = false;
@@ -200,6 +282,7 @@
       }
 
       const previousStatsSignature = this._statisticsConfigSignature();
+      const previousHomePowerEntity = this._config?.home_power || "";
 
       const suppliedWeatherImages = config.weather_images || {};
       this._config = {
@@ -212,6 +295,7 @@
         automatic_images: true,
 
         solar_power: "",
+        home_power: "",
         solar_production_today: "",
         grid_power: "",
         grid_import_today: "",
@@ -220,6 +304,8 @@
         battery_charge_power: "",
         battery_discharge_power: "",
         battery_soc: "",
+        battery_power_mode: "direct",
+        battery_phase_power: "",
 
         weather: "",
         low_carbon_entity: "",
@@ -232,13 +318,20 @@
         // dubbel aangemelde Energy-bronnen bij elkaar optellen.
         statistics_source_mode: "all",
         weather_fade_ms: 1800,
+        home_power_hold_seconds: 30,
         weather_images: {
           ...DEFAULT_WEATHER_IMAGES,
           ...suppliedWeatherImages,
         },
         navigation_path: "/energy",
         modules: { solar: true, grid: true, battery: "auto", gas: "auto", low_carbon: "auto" },
-        holidays: { enabled: false, country: "NL", date_format: "auto", ranges: [] },
+        holidays: {
+          enabled: false,
+          country: "NL",
+          date_format: "auto",
+          birthday: { enabled: false, date: "" },
+          ranges: [],
+        },
         layout: { preset: "default", coordinates: {} },
         support: {
           enabled: true,
@@ -248,7 +341,14 @@
         },
         ...config,
         modules: { solar: true, grid: true, battery: "auto", gas: "auto", low_carbon: "auto", ...(config.modules || {}) },
-        holidays: { enabled: false, country: "NL", date_format: "auto", ranges: [], ...(config.holidays || {}) },
+        holidays: {
+          enabled: false,
+          country: "NL",
+          date_format: "auto",
+          ranges: [],
+          ...(config.holidays || {}),
+          birthday: { enabled: false, date: "", ...(config.holidays?.birthday || {}) },
+        },
         layout: { preset: "default", coordinates: {}, ...(config.layout || {}) },
         support: {
           enabled: true,
@@ -262,6 +362,11 @@
           ...suppliedWeatherImages,
         },
       };
+
+      if (previousHomePowerEntity !== (this._config.home_power || "")) {
+        this._lastValidHomePower = Number.NaN;
+        this._lastValidHomePowerAt = 0;
+      }
 
       if (!this._shellBuilt) {
         this._buildShell();
@@ -364,7 +469,15 @@
         battery_charge_power: "",
         battery_discharge_power: "",
         battery_soc: "",
-        holidays: { enabled: false, country: "NL", date_format: "auto", ranges: [] }
+        battery_power_mode: "direct",
+        battery_phase_power: "",
+        holidays: {
+          enabled: false,
+          country: "NL",
+          date_format: "auto",
+          birthday: { enabled: false, date: "" },
+          ranges: [],
+        },
       };
     }
 
@@ -427,6 +540,12 @@
         this.shadowRoot.querySelectorAll(`[data-module="${name}"]`).forEach((element) => {
           element.classList.toggle("module-hidden", !this._moduleEnabled(name));
         });
+      }
+      const kpiBar = this.shadowRoot.querySelector(".kpi-bar");
+      if (kpiBar) {
+        const visibleCount = kpiBar.querySelectorAll(".kpi:not(.module-hidden)").length;
+        kpiBar.style.setProperty("--visible-kpi-count", String(Math.max(1, visibleCount)));
+        kpiBar.dataset.visibleCount = String(visibleCount);
       }
       this._supportButton?.classList.toggle("module-hidden", this._config?.support?.enabled === false);
     }
@@ -911,8 +1030,16 @@
       const solar = this._moduleEnabled("solar") ? this._power(this._config.solar_power) : 0;
       const grid = this._moduleEnabled("grid") ? this._power(this._config.grid_power) : 0;
       const batteryEnabled = this._moduleEnabled("battery");
-      const charging = batteryEnabled ? this._power(this._config.battery_charge_power) : 0;
-      const discharging = batteryEnabled ? this._power(this._config.battery_discharge_power) : 0;
+      const rawCharging = batteryEnabled ? this._power(this._config.battery_charge_power) : 0;
+      const rawDischarging = batteryEnabled ? this._power(this._config.battery_discharge_power) : 0;
+      const {
+        charging,
+        discharging,
+        estimated: batteryPowerEstimated,
+      } = this._resolvedBatteryPowers(
+        rawCharging,
+        rawDischarging
+      );
       const soc = Math.round(this._number(this._config.battery_soc, 0));
 
       const gridImport = grid > 20 ? grid : 0;
@@ -954,9 +1081,9 @@
       this._setText("grid-export", `→ ${this._formatPower(gridExport)}`);
       this._setText("battery-soc", `${soc}%`);
       const batteryFlowText = charging > 10
-        ? `↑ ${this._formatPower(charging)}`
+        ? `↑ ${batteryPowerEstimated ? "≈ " : ""}${this._formatPower(charging)}`
         : discharging > 10
-          ? `↓ ${this._formatPower(discharging)}`
+          ? `↓ ${batteryPowerEstimated ? "≈ " : ""}${this._formatPower(discharging)}`
           : "• 0 W";
       this._setText("battery-flow", batteryFlowText);
       this._setText("battery-mode", batteryStatus);
@@ -982,16 +1109,19 @@
       // Bruto huisverbruik volgens de actuele energiebalans. De Envoy-sensor
       // meet de volledige PV-productie; laden en terugleveren zijn uitgaande
       // stromen en worden daarom afgetrokken.
-      const home = Math.max(
-        0,
-        solar + gridImport + discharging - gridExport - charging
+      const home = this._resolvedHomePower(
+        solar,
+        gridImport,
+        discharging,
+        gridExport,
+        charging
       );
 
       // Houd de actuele donutcomponenten exact gelijk aan hetzelfde berekende
       // huisvermogen, ook wanneer een deel van de netafname de batterij laadt.
       const allocatedTotal =
         solarForHome + gridForHome + batteryForHome;
-      if (allocatedTotal > 0 && home < allocatedTotal) {
+      if (Number.isFinite(home) && allocatedTotal > 0 && home < allocatedTotal) {
         const allocationScale = home / allocatedTotal;
         solarForHome *= allocationScale;
         gridForHome *= allocationScale;
@@ -1000,7 +1130,12 @@
 
       // Huisvermogen gebruikt exact dezelfde broncomponenten als de donut-ring.
       // Hierdoor wordt direct verbruikte PV en batterijontlading wel meegeteld.
-      this._setText("home-power", this._formatPower(home));
+      this._setText(
+        "home-power",
+        Number.isFinite(home)
+          ? `${batteryPowerEstimated ? "≈ " : ""}${this._formatPower(home)}`
+          : "-- W"
+      );
 
       if (this._homeRing) {
         const stats = this._statistics || {};
@@ -1237,6 +1372,12 @@
       return new Date(year, monthIndex, 1 + offset + (occurrence - 1) * 7);
     }
 
+    _lastWeekdayOfMonth(year, monthIndex, weekday) {
+      const last = new Date(year, monthIndex + 1, 0);
+      const offset = (last.getDay() - weekday + 7) % 7;
+      return new Date(year, monthIndex, last.getDate() - offset);
+    }
+
     _holidayDateFormat() {
       const configured = String(this._config?.holidays?.date_format || "auto").toLowerCase();
       if (["american", "us", "mm-dd"].includes(configured)) return "american";
@@ -1277,26 +1418,81 @@
       const settings = this._config?.holidays || {};
       if (!settings.enabled) return "";
 
+      const birthday = settings.birthday || {};
+      if (
+        birthday.enabled === true &&
+        birthday.date &&
+        this._dateInRange(now, birthday.date, birthday.date)
+      ) {
+        return "birthday";
+      }
+
       for (const range of settings.ranges || []) {
         if (range?.enabled !== false && range?.name && this._dateInRange(now, range.start, range.end)) {
           return String(range.image_name || range.name).toLowerCase();
         }
       }
 
-      if (String(settings.country || "NL").toUpperCase() !== "NL") return "";
-      for (const [name, defaults] of Object.entries(DEFAULT_HOLIDAYS)) {
+      const matchesFixedHoliday = (name) => {
+        const defaults = DEFAULT_HOLIDAYS[name];
+        const item = settings.items?.[name] || {};
+        if (!defaults || item.enabled === false) return false;
+        const usesCustomDates = Boolean(item.start || item.end);
+        return this._dateInRange(
+          now,
+          item.start || defaults.start,
+          item.end || defaults.end,
+          usesCustomDates ? this._holidayDateFormat() : "american"
+        );
+      };
+
+      for (const name of ["nieuwjaar", "valentine", "halloween", "kerst"]) {
+        if (matchesFixedHoliday(name)) return name;
+      }
+
+      const country = String(settings.country || "NL").toUpperCase();
+      if (country === "US") {
+        if (
+          this._holidayItemEnabled("independence-day") &&
+          now.getMonth() === 6 &&
+          now.getDate() === 4
+        ) return "independence-day";
+        if (
+          this._holidayItemEnabled("thanksgiving") &&
+          this._sameDate(
+            now,
+            this._nthWeekdayOfMonth(now.getFullYear(), 10, 4, 4)
+          )
+        ) return "thanksgiving";
+        if (
+          this._holidayItemEnabled("memorial-day") &&
+          this._sameDate(
+            now,
+            this._lastWeekdayOfMonth(now.getFullYear(), 4, 1)
+          )
+        ) return "memorial-day";
+      }
+
+      const easter = this._easterDate(now.getFullYear());
+      if (this._holidayItemEnabled("pasen") && (this._sameDate(now, easter) || this._sameDate(now, this._daysAfter(easter, 1)))) return "pasen";
+      if (this._holidayItemEnabled("hemelvaart") && this._sameDate(now, this._daysAfter(easter, 39))) return "hemelvaart";
+      if (
+        this._holidayItemEnabled("pinksteren") &&
+        (
+          this._sameDate(now, this._daysAfter(easter, 49)) ||
+          this._sameDate(now, this._daysAfter(easter, 50))
+        )
+      ) return "pinksteren";
+
+      if (country !== "NL") return "";
+      for (const name of ["koningsdag", "dodenherdenking", "bevrijdingsdag", "sinterklaas"]) {
+        const defaults = DEFAULT_HOLIDAYS[name];
         const item = settings.items?.[name] || {};
         const usesCustomDates = Boolean(item.start || item.end);
         const start = item.start || defaults.start;
         const end = item.end || defaults.end;
         if (item.enabled !== false && this._dateInRange(now, start, end, usesCustomDates ? this._holidayDateFormat() : "american")) return name;
       }
-
-      const month = now.getMonth() + 1;
-      const day = now.getDate();
-      const easter = this._easterDate(now.getFullYear());
-
-      if (this._holidayItemEnabled("pasen") && (this._sameDate(now, easter) || this._sameDate(now, this._daysAfter(easter, 1)))) return "pasen";
       if (
         this._holidayItemEnabled("moederdag") &&
         this._sameDate(
@@ -1304,12 +1500,6 @@
           this._nthWeekdayOfMonth(now.getFullYear(), 4, 0, 2)
         )
       ) return "moederdag";
-      if (this._holidayItemEnabled("hemelvaart") && this._sameDate(now, this._daysAfter(easter, 39))) return "hemelvaart";
-      if (
-        this._holidayItemEnabled("pinksteren") &&
-        this._sameDate(now, this._daysAfter(easter, 49)) ||
-        this._holidayItemEnabled("pinksteren") && this._sameDate(now, this._daysAfter(easter, 50))
-      ) return "pinksteren";
       if (
         this._holidayItemEnabled("vaderdag") &&
         this._sameDate(
@@ -1320,29 +1510,50 @@
       return "";
     }
 
+    _holidayImagePath(holiday, period) {
+      const normalized = String(holiday || "")
+        .trim()
+        .toLowerCase()
+        .replaceAll(/\s+/g, "-");
+      if (!normalized) return "";
+
+      const imageName = HOLIDAY_IMAGE_NAMES[normalized] || normalized;
+      const nlOnly = new Set([
+        "koningsdag",
+        "dodenherdenking",
+        "bevrijdingsdag",
+        "sinterklaas",
+      ]);
+      const usOnly = new Set([
+        "independence-day",
+        "thanksgiving",
+        "memorial-day",
+      ]);
+      const group = nlOnly.has(normalized)
+        ? "holidays/nl"
+        : usOnly.has(normalized)
+          ? "holidays/us"
+          : "holidays/common";
+      return `${group}/${imageName}-${period}.png`;
+    }
+
     _weatherBaseName(weatherState) {
       const state = String(weatherState || "unknown")
         .toLowerCase()
         .replaceAll("_", "-");
 
-      if (["snowy", "snowy-rainy", "hail"].includes(state)) {
-        return "sneeuw";
-      }
-      if (
-        [
-          "rainy",
-          "pouring",
-          "lightning",
-          "lightning-rainy",
-          "exceptional",
-        ].includes(state)
-      ) {
-        return "regen";
-      }
-      if (["cloudy", "fog", "windy", "windy-variant"].includes(state)) {
-        return "bewolkt";
-      }
-      return "zon";
+      if (state === "hail") return "hail";
+      if (state === "snowy") return "snowy";
+      if (state === "snowy-rainy") return "snowy-rainy";
+      if (state === "pouring") return "pouring";
+      if (["lightning", "lightning-rainy"].includes(state)) return "lightning";
+      if (state === "rainy") return "rainy";
+      if (state === "fog") return "mist";
+      if (["windy", "windy-variant"].includes(state)) return "windy";
+      if (state === "cloudy") return "cloudy";
+      if (["partlycloudy", "partly-cloudy"].includes(state)) return "partly-cloudy";
+      if (state === "exceptional") return "exceptional";
+      return "sunny";
     }
 
     _rememberTemperature(temperature) {
@@ -1367,7 +1578,7 @@
     }
 
     _imageFilename(weatherState) {
-      const period = this._isNight() ? "avond" : "overdag";
+      const period = this._isNight() ? "night" : "day";
       const holiday = this._holidayName(new Date());
       const currentTemperature = Number(
         this._state(this._config.weather)?.attributes?.temperature
@@ -1390,31 +1601,42 @@
         : this._dailyMinTemperature;
 
       if (holiday) {
-        return `${holiday} ${period}.png`;
+        return this._holidayImagePath(holiday, period);
       }
 
       if (
         Number.isFinite(maximumTemperature) &&
         maximumTemperature >= 25
       ) {
-        return `25plus ${period}.png`;
+        return `weather/hot-${period}.png`;
       }
       if (
         Number.isFinite(minimumTemperature) &&
         minimumTemperature <= -5
       ) {
-        return `-5 ${period}.png`;
+        return `weather/freezing-${period}.png`;
       }
 
-      return `${this._weatherBaseName(weatherState)} ${period}.png`;
+      return `weather/${this._weatherBaseName(weatherState)}-${period}.png`;
     }
 
     _imageUrl(filename) {
       const directory = String(this._config.image_directory || "")
         .replace(/\/$/, "");
+      const encodedPath = String(filename || "")
+        .split("/")
+        .map((part) => encodeURIComponent(part))
+        .join("/");
       return this._versionedImageUrl(
-        `${directory}/${encodeURIComponent(filename)}`
+        `${directory}/${encodedPath}`
       );
+    }
+
+    _imageCandidates(filename) {
+      const candidates = [filename, LEGACY_IMAGE_NAMES[filename]]
+        .filter(Boolean)
+        .filter((value, index, values) => values.indexOf(value) === index);
+      return candidates.map((candidate) => this._imageUrl(candidate));
     }
 
     _versionedImageUrl(url) {
@@ -1454,34 +1676,24 @@
 
     _applyImageProfile(filename) {
       if (this._config?.layout?.preset === "custom" && this._applyCustomLayout()) return;
-      // Alle nieuwe weerbeelden zijn pixel-identiek opgebouwd (1536 x 1024).
-      // Achtergrond en flows delen dezelfde SVG-viewBox en schaalmethode.
-      // Daardoor is dit ene profiel geldig voor iedere automatische variant.
+
+      // The current 1536 x 1024 image set shares the same physical house,
+      // meter and battery positions. Keep flows on the conduits in the scene;
+      // long legacy paths from the left edge do not align in responsive views.
       this._paths.solar?.setAttribute(
         "d",
         "M 1090 430 Q 1118 430 1118 458 " +
           "L 1118 582 Q 1118 598 1102 598 " +
           "L 1062 598"
       );
-      this._paths.gridImport?.setAttribute(
-        "d",
-        "M 1050 704 L 1050 635"
-      );
-      this._paths.gridExport?.setAttribute(
-        "d",
-        "M 1050 704 L 1050 635"
-      );
+      this._paths.gridImport?.setAttribute("d", "M 1050 704 L 1050 635");
+      this._paths.gridExport?.setAttribute("d", "M 1050 704 L 1050 635");
       this._paths.battery?.setAttribute(
         "d",
         "M 1008 635 L 1008 672 L 914 672"
       );
-
-      this._gridImportArrows?.setAttribute(
-        "d", ""
-      );
-      this._gridExportArrows?.setAttribute(
-        "d", ""
-      );
+      this._gridImportArrows?.setAttribute("d", "");
+      this._gridExportArrows?.setAttribute("d", "");
       this._syncPulseLengths();
       return;
 
@@ -1523,7 +1735,11 @@
         return;
       }
 
-      const profile = IMAGE_PROFILES[filename] || IMAGE_PROFILES["zon overdag.png"];
+      // Profiles were measured before the image files received their new
+      // English folder names. Resolve the current filename back to the
+      // measured profile name so every scene keeps its own alignment.
+      const profileName = LEGACY_IMAGE_NAMES[filename] || filename;
+      const profile = IMAGE_PROFILES[profileName] || IMAGE_PROFILES["zon overdag.png"];
       const [solarY, gridImportY, gridExportY, batteryX, homeY] = profile;
       const deltaX = batteryX - 943;
       const gridEndX = 763 + deltaX;
@@ -1537,7 +1753,7 @@
       // naar rechts staan dan de overige pixelprofielen. Gebruik daarom een
       // eigen route: PV via het dak naar de kast, net naar dezelfde kast en
       // batterij rechtstreeks naar de fysieke thuisbatterij.
-      if (filename === "25plus overdag.png") {
+      if (profileName === "25plus overdag.png") {
         this._paths.solar?.setAttribute(
           "d",
           "M 24 330 L 1080 330 " +
@@ -1634,10 +1850,12 @@
 
       const filename = this._config.automatic_images
         ? this._imageFilename(weatherState)
-        : "zon overdag.png";
-      const url = this._config.automatic_images
-        ? this._imageUrl(filename)
-        : this._versionedImageUrl(this._config.background_image);
+        : "weather/sunny-day.png";
+      const urls = this._config.automatic_images
+        ? this._imageCandidates(filename)
+        : [this._versionedImageUrl(this._config.background_image)];
+      let candidateIndex = 0;
+      let url = urls[candidateIndex];
 
       if (
         !url ||
@@ -1701,6 +1919,13 @@
       };
 
       preload.onerror = () => {
+        candidateIndex += 1;
+        if (candidateIndex < urls.length) {
+          url = urls[candidateIndex];
+          this._pendingBackgroundUrl = url;
+          preload.src = url;
+          return;
+        }
         this._pendingBackgroundUrl = "";
         if (token === this._backgroundTransitionToken) {
           // Een tijdelijke 404 tijdens uploaden of cacheverversing mag de
@@ -2284,8 +2509,12 @@
         "clear-night": ["mdi:weather-night", "Heldere nacht"],
         clear_night: ["mdi:weather-night", "Heldere nacht"],
         fog: ["mdi:weather-fog", "Mist"],
+        hail: ["mdi:weather-hail", "Hagel"],
         snowy: ["mdi:weather-snowy", "Sneeuw"],
         "snowy-rainy": ["mdi:weather-snowy-rainy", "Natte sneeuw"],
+        windy: ["mdi:weather-windy", "Winderig"],
+        "windy-variant": ["mdi:weather-windy-variant", "Winderig"],
+        exceptional: ["mdi:alert-circle-outline", "Uitzonderlijk weer"],
       };
       const [icon, label] =
         map[state] || ["mdi:weather-partly-cloudy", state];
@@ -2301,6 +2530,71 @@
 
     _state(entityId) {
       return entityId ? this._hass?.states?.[entityId] : undefined;
+    }
+
+    _resolvedHomePower(solar, gridImport, discharging, gridExport, charging) {
+      const directHomeState = this._state(this._config?.home_power);
+      const directHomeValue = Number.parseFloat(directHomeState?.state);
+      if (Number.isFinite(directHomeValue)) {
+        const directHome = Math.max(0, this._power(this._config.home_power));
+        this._lastValidHomePower = directHome;
+        this._lastValidHomePowerAt = Date.now();
+        return directHome;
+      }
+      const calculatedHome =
+        solar + gridImport + discharging - gridExport - charging;
+      if (calculatedHome >= 0) {
+        this._lastValidHomePower = calculatedHome;
+        this._lastValidHomePowerAt = Date.now();
+        return calculatedHome;
+      }
+
+      const holdMilliseconds = Math.max(
+        0,
+        Number(this._config?.home_power_hold_seconds ?? 30) * 1000
+      );
+      if (
+        Number.isFinite(this._lastValidHomePower) &&
+        Date.now() - this._lastValidHomePowerAt <= holdMilliseconds
+      ) {
+        return this._lastValidHomePower;
+      }
+      return Number.NaN;
+    }
+
+    _resolvedBatteryPowers(rawCharging, rawDischarging) {
+      const charging = Math.max(0, Number(rawCharging) || 0);
+      const discharging = Math.max(0, Number(rawDischarging) || 0);
+      const mode = String(this._config?.battery_power_mode || "direct").toLowerCase();
+      if (mode !== "phase_estimate") {
+        return { charging, discharging, estimated: false };
+      }
+
+      const phaseState = this._state(this._config?.battery_phase_power);
+      const phaseValue = Number.parseFloat(phaseState?.state);
+      if (!Number.isFinite(phaseValue)) {
+        return { charging, discharging, estimated: false };
+      }
+
+      const phasePower = this._power(this._config.battery_phase_power);
+      if (charging > 10 && discharging <= 10) {
+        return {
+          charging: Math.min(charging, Math.max(0, phasePower)),
+          discharging: 0,
+          estimated: true,
+        };
+      }
+      if (discharging > 10 && charging <= 10) {
+        // During discharge the P1 phase is already net of home loads on that
+        // phase and therefore under-reports battery output. Keep the direct
+        // Anker discharge measurement; only charging uses the phase estimate.
+        return {
+          charging: 0,
+          discharging,
+          estimated: false,
+        };
+      }
+      return { charging: 0, discharging: 0, estimated: true };
     }
 
     _number(entityId, fallback = 0) {
@@ -3020,12 +3314,7 @@
           height: 13%;
           display: grid;
           grid-template-columns:
-            minmax(0, 0.88fr)
-            minmax(0, 0.92fr)
-            minmax(0, 1fr)
-            minmax(0, 0.95fr)
-            minmax(0, 1fr)
-            minmax(0, 1.18fr);
+            repeat(var(--visible-kpi-count, 6), minmax(0, 1fr));
           overflow: hidden;
           border-radius: 0;
           border: none;
@@ -3041,6 +3330,7 @@
           position: relative;
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 0.4cqw;
           min-width: 0;
           padding: 0.52cqw 0.48cqw;
@@ -3082,7 +3372,10 @@
         .kpi-icon.cyan { color: #4fcaff; }
         .kpi-icon.lime { color: #a0ed70; }
 
-        .kpi-text { min-width: 0; }
+        .kpi-text {
+          min-width: 0;
+          text-align: center;
+        }
 
         .kpi-label {
           font-size: clamp(9px, 0.74cqw, 12px);
@@ -3261,6 +3554,7 @@
             <h3>Required entities</h3>
             ${this._entityPicker("solar_power", "Current solar power")}
             ${this._entityPicker("grid_power", "Signed grid power")}
+            ${this._entityPicker("home_power", "Current home consumption (recommended)")}
             ${this._entityPicker("weather", "Weather entity", "weather")}
             <label class="toggle">Show support button<input type="checkbox" data-nested="support.enabled" ${this._config.support?.enabled !== false ? "checked" : ""}></label>
           </div>
@@ -3286,10 +3580,14 @@
 
           <div class="tab-page ${this._activeTab === "holidays" ? "active" : ""}" data-page="holidays">
             <label class="toggle">Enable holiday scenes<input type="checkbox" data-nested="holidays.enabled" ${this._config.holidays?.enabled ? "checked" : ""}></label>
+            <label>Holiday country<select data-nested-value="holidays.country">
+              ${[["NL", "Netherlands"], ["COMMON", "Common scenes only"]].map(([value, label]) => `<option value="${value}" ${String(this._config.holidays?.country || "NL").toUpperCase() === value ? "selected" : ""}>${label}</option>`).join("")}
+            </select></label>
             <label>Holiday date format<select data-nested-value="holidays.date_format">
               ${[["auto", "Automatic"], ["european", "European (DD-MM)"], ["american", "American (MM-DD)"]].map(([value, label]) => `<option value="${value}" ${String(this._config.holidays?.date_format || "auto") === value ? "selected" : ""}>${label}</option>`).join("")}
             </select></label>
             <small>Fixed holidays can use your own start and end dates. Movable holidays are calculated automatically each year.</small>
+            ${this._birthdayEditorMarkup()}
             ${this._holidayEditorMarkup()}
           </div>
         </div>
@@ -3313,6 +3611,8 @@
       }));
       this.shadowRoot.querySelectorAll("[data-holiday-enable]").forEach((element) => element.addEventListener("change", (event) => this._updateHoliday(event.currentTarget.dataset.holidayEnable, "enabled", event.currentTarget.checked)));
       this.shadowRoot.querySelectorAll("[data-holiday-date]").forEach((element) => element.addEventListener("change", (event) => this._updateHoliday(event.currentTarget.dataset.holidayDate, event.currentTarget.dataset.dateField, event.currentTarget.value)));
+      this.shadowRoot.querySelectorAll("[data-birthday-enable]").forEach((element) => element.addEventListener("change", (event) => this._updateBirthday("enabled", event.currentTarget.checked)));
+      this.shadowRoot.querySelectorAll("[data-birthday-date]").forEach((element) => element.addEventListener("change", (event) => this._updateBirthday("date", event.currentTarget.value)));
     }
 
     _visibilityOptions(module) {
@@ -3339,7 +3639,8 @@
 
     _holidayEditorMarkup() {
       const fixed = [
-        ["nieuwjaar", "New Year"], ["koningsdag", "King's Day"],
+        ["nieuwjaar", "New Year"], ["valentine", "Valentine's Day"],
+        ["halloween", "Halloween"], ["koningsdag", "King's Day"],
         ["dodenherdenking", "Remembrance Day"], ["bevrijdingsdag", "Liberation Day"],
         ["sinterklaas", "Sinterklaas"], ["kerst", "Christmas"]
       ];
@@ -3361,6 +3662,15 @@
           <label class="toggle">${label} <small>(automatic date)</small><input type="checkbox" data-holiday-enable="${name}" ${this._config.holidays?.items?.[name]?.enabled !== false ? "checked" : ""}></label>
         </div>`).join("");
       return fixedMarkup + movableMarkup;
+    }
+
+    _birthdayEditorMarkup() {
+      const birthday = this._config.holidays?.birthday || {};
+      return `
+        <div class="holiday">
+          <label class="toggle">Birthday<input type="checkbox" data-birthday-enable ${birthday.enabled === true ? "checked" : ""}></label>
+          <label>Date<input data-birthday-date placeholder="${this._editorHolidayFormat() === "american" ? "MM-DD" : "DD-MM"}" value="${this._escape(birthday.date || "")}"></label>
+        </div>`;
     }
 
     _entityPicker(field, label, domain = "sensor") {
@@ -3414,6 +3724,21 @@
       this._changed();
     }
 
+    _updateBirthday(field, value) {
+      const holidays = this._config.holidays || {};
+      this._config = {
+        ...this._config,
+        holidays: {
+          ...holidays,
+          birthday: {
+            ...(holidays.birthday || {}),
+            [field]: value,
+          },
+        },
+      };
+      this._changed();
+    }
+
     _changed() {
       this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config }, bubbles: true, composed: true }));
     }
@@ -3425,20 +3750,1103 @@
     customElements.define(LEGACY_CARD_TAG, class extends HousePowerFlowCard {});
   }
 
+  console.info(
+      `%c HOUSE-POWER-FLOW-CARD-BASE %c v${VERSION} `,
+    "color:white;background:#2563eb;font-weight:700;padding:2px 5px",
+    "color:#2563eb;background:#dbeafe;font-weight:700;padding:2px 5px"
+  );
+})();
+
+/*
+ * House Power Flow Card - Responsive production layout
+ * ------------------------------------------------------------
+ * Responsive Home Assistant layout based on the proven Beta 8 implementation.
+ *
+ * This source is bundled after the internal base class. Home Assistant users
+ * load only house-power-flow-card.js and use custom:house-power-flow-card.
+ *
+ * Responsive behaviour:
+ * - layout_mode: auto    -> phone portrait uses mobile layout
+ *                           phone landscape uses a compact landscape layout
+ *                           tablet / desktop uses the original base layout
+ * - layout_mode: mobile  -> always use mobile layout
+ * - layout_mode: desktop -> always use original desktop/tablet layout
+ *
+ * The mobile layout deliberately keeps:
+ * - the original house/weather image
+ * - the PV / grid / battery / gas panels
+ * - the home-use donut
+ * - the animated energy flows
+ * - the daily KPI values
+ *
+ * Phone presentation is responsive by orientation:
+ * - wider/readable side panels
+ * - larger home-use panel with donut
+ * - KPI footer becomes 3 columns x 2 rows
+ * - last-update text is hidden
+ */
+
+(async () => {
+  const BASE_TAG = "house-power-flow-card-base";
+  const BETA_TAG = "house-power-flow-card";
+  const VERSION = "5.2.1";
+  const MOBILE_BREAKPOINT = 600;
+  const LANDSCAPE_MAX_WIDTH = 1000;
+  const LANDSCAPE_MAX_HEIGHT = 700;
+
+  if (customElements.get(BETA_TAG)) {
+    console.info(`${BETA_TAG} is already registered.`);
+    return;
+  }
+
+  // The responsive production card extends the internal base in this bundle.
+  if (!customElements.get(BASE_TAG)) {
+    try {
+      await customElements.whenDefined(BASE_TAG);
+    } catch (error) {
+      console.error(
+        "HOUSE-POWER-FLOW-CARD: internal base card could not be loaded.",
+        error
+      );
+      return;
+    }
+  }
+
+  const BaseCard = customElements.get(BASE_TAG);
+
+  if (!BaseCard) {
+    console.error(
+      "HOUSE-POWER-FLOW-CARD: internal base class is not registered."
+    );
+    return;
+  }
+
+  const MOBILE_CSS = `
+    /* =========================================================
+       MOBILE LAYOUT
+       ========================================================= */
+
+    :host(.mobile-layout) {
+      display: block !important;
+      width: 100% !important;
+      height: auto !important;
+      min-height: 0 !important;
+    }
+
+    :host(.mobile-layout) ha-card {
+      width: 100% !important;
+      height: auto !important;
+      min-height: 0 !important;
+
+      /*
+       * Close to the original phone composition, but with enough
+       * height for two readable KPI rows.
+       */
+      aspect-ratio: 1.34 / 1 !important;
+
+      border-radius: 24px !important;
+    }
+
+    :host(.mobile-layout) .canvas {
+      position: absolute !important;
+      inset: 0 !important;
+    }
+
+    /*
+     * Keep background + flow SVG on the exact same coordinate system.
+     * We therefore deliberately keep preserveAspectRatio="slice".
+     */
+    :host(.mobile-layout) .scene {
+      width: 100% !important;
+      height: 100% !important;
+
+      /*
+       * Portrait v8:
+       * no artificial SVG shrink. The shorter 1.34:1 card ratio
+       * reveals a little more of the original 1536x1024 scene while
+       * keeping background and flow paths pixel-locked. The left
+       * panels and footer were rebalanced so no text is clipped.
+       */
+      transform: scale(1) !important;
+      transform-origin: center center !important;
+    }
+
+    :host(.mobile-layout) .shade {
+      background:
+        linear-gradient(
+          180deg,
+          rgba(3,10,18,0.42) 0%,
+          rgba(3,10,18,0.10) 15%,
+          rgba(3,10,18,0.02) 43%,
+          rgba(3,10,18,0.05) 63%,
+          rgba(3,10,18,0.40) 75%,
+          rgba(3,10,18,0.78) 100%
+        ) !important;
+    }
+
+
+    /* =========================================================
+       HEADER
+       ========================================================= */
+
+    :host(.mobile-layout) header {
+      top: 2.4% !important;
+      left: 3% !important;
+      right: 3% !important;
+
+      align-items: flex-start !important;
+    }
+
+    :host(.mobile-layout) .heading {
+      gap: 6px !important;
+    }
+
+    :host(.mobile-layout) .heading-icon {
+      width: 28px !important;
+      height: 28px !important;
+      max-width: 28px !important;
+      max-height: 28px !important;
+
+      border-radius: 8px !important;
+    }
+
+    :host(.mobile-layout) .heading-icon ha-icon {
+      --mdc-icon-size: 15px !important;
+    }
+
+    :host(.mobile-layout) .title {
+      font-size: 19px !important;
+      line-height: 20px !important;
+      letter-spacing: -0.025em !important;
+    }
+
+    :host(.mobile-layout) .live {
+      margin-top: 2px !important;
+
+      font-size: 10px !important;
+      line-height: 12px !important;
+    }
+
+    :host(.mobile-layout) .live i {
+      width: 5px !important;
+      height: 5px !important;
+      margin-left: 3px !important;
+    }
+
+
+    /* =========================================================
+       WEATHER
+       ========================================================= */
+
+    :host(.mobile-layout) .weather {
+      gap: 5px !important;
+      margin-right: 0 !important;
+      align-items: center !important;
+    }
+
+    :host(.mobile-layout) .weather ha-icon {
+      --mdc-icon-size: 17px !important;
+    }
+
+    :host(.mobile-layout) .temperature {
+      font-size: 20px !important;
+      line-height: 21px !important;
+    }
+
+    :host(.mobile-layout) .weather-label {
+      margin-top: 2px !important;
+
+      font-size: 9px !important;
+      line-height: 11px !important;
+
+      opacity: 0.92 !important;
+    }
+
+
+    /* =========================================================
+       PANEL BASE
+       ========================================================= */
+
+    :host(.mobile-layout) .panel {
+      gap: 4px !important;
+
+      border-radius: 11px !important;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(22,45,68,0.95),
+          rgba(10,25,40,0.96)
+        ) !important;
+
+      box-shadow:
+        0 5px 14px rgba(0,0,0,0.27),
+        inset 0 1px 0 rgba(255,255,255,0.055) !important;
+    }
+
+    :host(.mobile-layout) .panel > div:last-child {
+      min-width: 0 !important;
+      overflow: visible !important;
+    }
+
+
+    /* =========================================================
+       LEFT PANELS
+       ========================================================= */
+
+    :host(.mobile-layout) .solar-panel {
+      left: 2.2% !important;
+      top: 21.2% !important;
+
+      width: 27.5% !important;
+      height: 12.2% !important;
+
+      padding: 3px 5px !important;
+    }
+
+    :host(.mobile-layout) .grid-panel {
+      left: 2.2% !important;
+      top: 34.2% !important;
+
+      width: 27.5% !important;
+      height: 18.0% !important;
+
+      padding: 3px 5px !important;
+    }
+
+    :host(.mobile-layout) .battery-panel {
+      left: 2.2% !important;
+      top: 53.0% !important;
+
+      width: 27.5% !important;
+      height: 12.2% !important;
+
+      padding: 3px 5px !important;
+    }
+
+    :host(.mobile-layout) .gas-panel {
+      left: 2.2% !important;
+      top: 66.0% !important;
+
+      width: 27.5% !important;
+      height: 11.5% !important;
+
+      padding: 3px 5px !important;
+    }
+
+
+    /* =========================================================
+       LEFT PANEL ICONS
+       ========================================================= */
+
+    :host(.mobile-layout) .panel-icon,
+    :host(.mobile-layout) .battery-icon {
+      width: 16px !important;
+      height: 16px !important;
+      flex: 0 0 16px !important;
+    }
+
+    :host(.mobile-layout) .panel-icon ha-icon,
+    :host(.mobile-layout) .battery-icon ha-icon {
+      --mdc-icon-size: 10px !important;
+    }
+
+
+    /* =========================================================
+       LEFT PANEL TEXT
+       ========================================================= */
+
+    :host(.mobile-layout) .panel-label {
+      font-size: 9px !important;
+      line-height: 9px !important;
+
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+    :host(.mobile-layout) .panel-value {
+      margin-top: 1px !important;
+
+      font-size: 14px !important;
+      line-height: 14px !important;
+
+      white-space: nowrap !important;
+    }
+
+    :host(.mobile-layout) .panel-sub {
+      margin-top: 1px !important;
+
+      font-size: 7px !important;
+      line-height: 7px !important;
+
+      opacity: 0.90 !important;
+
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+
+    /* =========================================================
+       GRID IMPORT / EXPORT
+       ========================================================= */
+
+    :host(.mobile-layout) .grid-import,
+    :host(.mobile-layout) .grid-export {
+      margin-top: 1px !important;
+
+      font-size: 11px !important;
+      line-height: 11px !important;
+
+      white-space: nowrap !important;
+    }
+
+    :host(.mobile-layout) .grid-caption {
+      margin-top: 0 !important;
+      margin-left: 0 !important;
+
+      font-size: 7px !important;
+      line-height: 7px !important;
+
+      opacity: 0.84 !important;
+
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+
+    /* =========================================================
+       BATTERY
+       ========================================================= */
+
+    :host(.mobile-layout) .battery-data {
+      min-width: 0 !important;
+      overflow: hidden !important;
+    }
+
+    :host(.mobile-layout) .battery-title {
+      display: flex !important;
+      align-items: baseline !important;
+      gap: 2px !important;
+
+      font-size: 8px !important;
+      line-height: 8px !important;
+
+      white-space: nowrap !important;
+    }
+
+    :host(.mobile-layout) .battery-current {
+      margin-top: 1px !important;
+    }
+
+    :host(.mobile-layout) .battery-current strong {
+      font-size: 10px !important;
+      line-height: 10px !important;
+    }
+
+    :host(.mobile-layout) .battery-current small {
+      margin-top: 1px !important;
+
+      font-size: 7px !important;
+      line-height: 7px !important;
+
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+    }
+
+
+    /* =========================================================
+       HOME USE / DONUT
+       The donut deliberately remains visible on mobile.
+       ========================================================= */
+
+    :host(.mobile-layout) .home-panel {
+      right: 2.0% !important;
+      top: 30.0% !important;
+
+      width: 17.2% !important;
+      min-height: 21.0% !important;
+
+      padding: 3px 2px !important;
+
+      border-radius: 9px !important;
+    }
+
+    :host(.mobile-layout) .home-ring {
+      width: 34px !important;
+      height: 34px !important;
+
+      max-width: 34px !important;
+      max-height: 34px !important;
+
+      margin: 0 auto 2px !important;
+    }
+
+    :host(.mobile-layout) .home-ring::before {
+      inset: 3px !important;
+    }
+
+    :host(.mobile-layout) .home-ring ha-icon {
+      --mdc-icon-size: 15px !important;
+    }
+
+    :host(.mobile-layout) .home-label {
+      font-size: 7.5px !important;
+      line-height: 8px !important;
+    }
+
+    :host(.mobile-layout) .home-value {
+      margin-top: 2px !important;
+
+      font-size: 14px !important;
+      line-height: 15px !important;
+
+      white-space: nowrap !important;
+    }
+
+    :host(.mobile-layout) .home-sub {
+      margin-top: 1px !important;
+
+      font-size: 6px !important;
+      line-height: 7px !important;
+
+      opacity: 0.87 !important;
+    }
+
+    :host(.mobile-layout) .home-total {
+      margin-top: 3px !important;
+      padding-top: 2px !important;
+
+      font-size: 6px !important;
+      line-height: 7px !important;
+    }
+
+    :host(.mobile-layout) .home-total strong {
+      margin-top: 1px !important;
+
+      font-size: 10px !important;
+      line-height: 11px !important;
+
+      white-space: nowrap !important;
+    }
+
+
+    /* =========================================================
+       SUPPORT BUTTON
+       ========================================================= */
+
+    :host(.mobile-layout) .support-button {
+      top: 3px !important;
+      right: 3px !important;
+
+      width: 18px !important;
+      height: 18px !important;
+
+      min-width: 18px !important;
+      min-height: 18px !important;
+    }
+
+    :host(.mobile-layout) .support-button ha-icon {
+      --mdc-icon-size: 10px !important;
+    }
+
+
+    /* =========================================================
+       KPI FOOTER
+       Desktop: 6 next to each other
+       Mobile : 3 columns x 2 rows
+       ========================================================= */
+
+    :host(.mobile-layout) .kpi-bar {
+      height: 21.5% !important;
+
+      grid-template-columns:
+        repeat(6, minmax(0, 1fr)) !important;
+
+      grid-template-rows:
+        repeat(2, minmax(0, 1fr)) !important;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(20,42,63,0.985),
+          rgba(8,22,35,0.995)
+        ) !important;
+    }
+
+    :host(.mobile-layout) .kpi {
+      box-sizing: border-box !important;
+
+      min-width: 0 !important;
+
+      gap: 4px !important;
+      padding: 4px 5px !important;
+
+      border-right:
+        1px solid rgba(255,255,255,0.07) !important;
+
+      border-bottom:
+        1px solid rgba(255,255,255,0.07) !important;
+
+      grid-column: span 2;
+    }
+
+    :host(.mobile-layout) .kpi:not(:last-child)::after {
+      display: none !important;
+    }
+
+    :host(.mobile-layout) .kpi:nth-child(3n) {
+      border-right: none !important;
+    }
+
+    :host(.mobile-layout) .kpi:nth-last-child(-n + 3) {
+      border-bottom: none !important;
+    }
+
+    :host(.mobile-layout) .kpi-bar[data-visible-count="5"] .kpi:nth-child(4) {
+      grid-column: 2 / span 2;
+    }
+
+    :host(.mobile-layout) .kpi-bar[data-visible-count="5"] .kpi:nth-child(5) {
+      border-right: none !important;
+    }
+
+    :host(.mobile-layout) .kpi-icon {
+      width: 20px !important;
+      height: 20px !important;
+
+      max-width: 20px !important;
+      max-height: 20px !important;
+
+      flex: 0 0 20px !important;
+    }
+
+    :host(.mobile-layout) .kpi-icon ha-icon {
+      --mdc-icon-size: 12px !important;
+    }
+
+    :host(.mobile-layout) .kpi-text {
+      min-width: 0 !important;
+      overflow: hidden !important;
+    }
+
+    :host(.mobile-layout) .kpi-label {
+      font-size: 7.5px !important;
+      line-height: 8px !important;
+
+      color:
+        rgba(226,234,244,0.80) !important;
+
+      white-space: normal !important;
+
+      display: -webkit-box !important;
+      -webkit-line-clamp: 2 !important;
+      -webkit-box-orient: vertical !important;
+
+      overflow: hidden !important;
+    }
+
+    :host(.mobile-layout) .kpi-value {
+      margin-top: 1px !important;
+
+      font-size: 11.5px !important;
+      line-height: 12px !important;
+
+      font-weight: 780 !important;
+
+      white-space: nowrap !important;
+
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+
+    /* =========================================================
+       LAST UPDATE
+       ========================================================= */
+
+    :host(.mobile-layout) .updated {
+      display: none !important;
+    }
+
+
+    /* =========================================================
+       SUPPORT POPUP
+       ========================================================= */
+
+    :host(.mobile-layout) .support-dialog {
+      padding: 5% !important;
+    }
+
+    :host(.mobile-layout) .support-dialog-card {
+      width: 88% !important;
+      padding: 18px !important;
+      border-radius: 16px !important;
+    }
+
+    :host(.mobile-layout) .support-dialog-card h2 {
+      font-size: 18px !important;
+    }
+
+    /* =========================================================
+       PHONE LANDSCAPE LAYOUT
+       ========================================================= */
+
+    :host(.phone-landscape-layout) {
+      display: block !important;
+      width: 100% !important;
+      height: auto !important;
+      min-height: 0 !important;
+    }
+
+    :host(.phone-landscape-layout) ha-card {
+      width: 100% !important;
+      height: auto !important;
+      min-height: 0 !important;
+      aspect-ratio: 2 / 1 !important;
+      border-radius: 22px !important;
+    }
+
+    :host(.phone-landscape-layout) .canvas {
+      position: absolute !important;
+      inset: 0 !important;
+    }
+
+    :host(.phone-landscape-layout) .scene {
+      width: 100% !important;
+      height: 100% !important;
+      transform: scale(1.28) !important;
+      transform-origin: center center !important;
+    }
+
+    :host(.phone-landscape-layout) .shade {
+      background:
+        linear-gradient(
+          180deg,
+          rgba(3,10,18,0.24) 0%,
+          rgba(3,10,18,0.06) 18%,
+          rgba(3,10,18,0.02) 45%,
+          rgba(3,10,18,0.04) 62%,
+          rgba(3,10,18,0.18) 80%,
+          rgba(3,10,18,0.36) 100%
+        ) !important;
+    }
+
+    :host(.phone-landscape-layout) header {
+      top: 2.2% !important;
+      left: 2.0% !important;
+      right: 2.0% !important;
+    }
+
+    :host(.phone-landscape-layout) .heading {
+      gap: 0.55cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .heading-icon {
+      width: 3.2cqw !important;
+      height: 3.2cqw !important;
+      max-width: 46px !important;
+      max-height: 46px !important;
+      border-radius: 0.85cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .heading-icon ha-icon {
+      --mdc-icon-size: 1.85cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .title {
+      font-size: clamp(16px, 1.55cqw, 24px) !important;
+      line-height: 1.02 !important;
+    }
+
+    :host(.phone-landscape-layout) .live {
+      margin-top: 0.08cqw !important;
+      font-size: clamp(9px, 0.72cqw, 12px) !important;
+    }
+
+    :host(.phone-landscape-layout) .weather {
+      gap: 0.55cqw !important;
+      margin-right: 1.8cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .weather ha-icon {
+      --mdc-icon-size: 1.95cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .temperature {
+      font-size: clamp(17px, 1.55cqw, 24px) !important;
+      line-height: 1 !important;
+    }
+
+    :host(.phone-landscape-layout) .weather-label {
+      margin-top: 0.08cqw !important;
+      font-size: clamp(8px, 0.64cqw, 11px) !important;
+    }
+
+    :host(.phone-landscape-layout) .solar-panel,
+    :host(.phone-landscape-layout) .grid-panel,
+    :host(.phone-landscape-layout) .battery-panel,
+    :host(.phone-landscape-layout) .gas-panel {
+      left: 1.15% !important;
+      width: 12.7% !important;
+      gap: 0.38cqw !important;
+      padding: 0.38cqw 0.38cqw !important;
+      border-radius: 0.88cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .solar-panel {
+      top: 20.8% !important;
+      height: 12.1% !important;
+    }
+
+    :host(.phone-landscape-layout) .grid-panel {
+      top: 33.5% !important;
+      height: 17.6% !important;
+    }
+
+    :host(.phone-landscape-layout) .battery-panel {
+      top: 52.0% !important;
+      height: 12.0% !important;
+    }
+
+    :host(.phone-landscape-layout) .gas-panel {
+      top: 64.6% !important;
+      height: 12.0% !important;
+    }
+
+    :host(.phone-landscape-layout) .panel-icon,
+    :host(.phone-landscape-layout) .battery-icon {
+      width: 2.2cqw !important;
+      height: 2.2cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .panel-icon ha-icon,
+    :host(.phone-landscape-layout) .battery-icon ha-icon {
+      --mdc-icon-size: 1.22cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .panel-label {
+      font-size: clamp(8px, 0.66cqw, 11px) !important;
+      line-height: 1.02 !important;
+    }
+
+    :host(.phone-landscape-layout) .panel-value {
+      margin-top: 0.10cqw !important;
+      font-size: clamp(12px, 0.98cqw, 17px) !important;
+      line-height: 1 !important;
+    }
+
+    :host(.phone-landscape-layout) .panel-sub,
+    :host(.phone-landscape-layout) .grid-caption {
+      margin-top: 0.08cqw !important;
+      font-size: clamp(6px, 0.48cqw, 8px) !important;
+      line-height: 1.02 !important;
+    }
+
+    :host(.phone-landscape-layout) .grid-import,
+    :host(.phone-landscape-layout) .grid-export {
+      margin-top: 0.12cqw !important;
+      font-size: clamp(10px, 0.82cqw, 14px) !important;
+      line-height: 1 !important;
+    }
+
+    :host(.phone-landscape-layout) .grid-caption {
+      margin-left: 0.62cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .battery-title {
+      gap: 0.16cqw !important;
+      font-size: clamp(8px, 0.66cqw, 11px) !important;
+      line-height: 1.02 !important;
+    }
+
+    :host(.phone-landscape-layout) .battery-current {
+      margin-top: 0.08cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .battery-current strong {
+      font-size: clamp(10px, 0.80cqw, 14px) !important;
+      line-height: 1 !important;
+    }
+
+    :host(.phone-landscape-layout) .battery-current small {
+      margin-top: 0.06cqw !important;
+      font-size: clamp(6px, 0.48cqw, 8px) !important;
+      line-height: 1.02 !important;
+    }
+
+    /* Smaller right card so more of the image remains visible. */
+    :host(.phone-landscape-layout) .home-panel {
+      right: 1.35% !important;
+      top: 26.0% !important;
+      width: 10.7% !important;
+      min-height: 23.4% !important;
+      padding: 0.46cqw 0.42cqw 0.52cqw !important;
+      border-radius: 0.88cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .home-ring {
+      width: 4.35cqw !important;
+      height: 4.35cqw !important;
+      max-width: 70px !important;
+      max-height: 70px !important;
+      margin: 0 auto 0.22cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .home-ring::before {
+      inset: 0.38cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .home-ring ha-icon {
+      --mdc-icon-size: 2.15cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .home-label {
+      font-size: clamp(9px, 0.74cqw, 12px) !important;
+      line-height: 1.02 !important;
+    }
+
+    :host(.phone-landscape-layout) .home-value {
+      margin-top: 0.16cqw !important;
+      font-size: clamp(12px, 1.42cqw, 22px) !important;
+      line-height: 1 !important;
+      white-space: nowrap !important;
+    }
+
+    :host(.phone-landscape-layout) .home-sub {
+      margin-top: 0.12cqw !important;
+      font-size: clamp(7px, 0.54cqw, 9px) !important;
+      line-height: 1.02 !important;
+    }
+
+    :host(.phone-landscape-layout) .home-total {
+      margin-top: 0.22cqw !important;
+      padding-top: 0.22cqw !important;
+      font-size: clamp(7px, 0.54cqw, 9px) !important;
+      line-height: 1.02 !important;
+    }
+
+    :host(.phone-landscape-layout) .home-total strong {
+      margin-top: 0.10cqw !important;
+      font-size: clamp(10px, 0.92cqw, 15px) !important;
+      line-height: 1 !important;
+      white-space: nowrap !important;
+    }
+
+    :host(.phone-landscape-layout) .support-button {
+      top: 0.24cqw !important;
+      right: 0.24cqw !important;
+      width: 1.75cqw !important;
+      height: 1.75cqw !important;
+      min-width: 22px !important;
+      min-height: 22px !important;
+    }
+
+    :host(.phone-landscape-layout) .support-button ha-icon {
+      --mdc-icon-size: 0.92cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .kpi-bar {
+      height: 12.2% !important;
+    }
+
+    :host(.phone-landscape-layout) .kpi {
+      gap: 0.24cqw !important;
+      padding: 0.26cqw 0.28cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .kpi-icon {
+      width: 1.85cqw !important;
+      height: 1.85cqw !important;
+      max-width: 30px !important;
+      max-height: 30px !important;
+    }
+
+    :host(.phone-landscape-layout) .kpi-icon ha-icon {
+      --mdc-icon-size: 1.00cqw !important;
+    }
+
+    :host(.phone-landscape-layout) .kpi-label {
+      font-size: clamp(7px, 0.52cqw, 9px) !important;
+    }
+
+    :host(.phone-landscape-layout) .kpi-value {
+      margin-top: 0.06cqw !important;
+      font-size: clamp(10px, 0.82cqw, 14px) !important;
+      line-height: 1 !important;
+    }
+
+    :host(.phone-landscape-layout) .updated {
+      right: 4px !important;
+      bottom: 1px !important;
+      font-size: clamp(6px, 0.42cqw, 8px) !important;
+    }
+
+  `;
+
+  class HousePowerFlowCardBeta8 extends BaseCard {
+    constructor() {
+      super();
+
+      this._betaPortraitQuery = window.matchMedia(
+        `(max-width: ${MOBILE_BREAKPOINT}px)`
+      );
+
+      this._betaLandscapePhoneQuery = window.matchMedia(
+        `(orientation: landscape) and (max-width: ${LANDSCAPE_MAX_WIDTH}px) and (max-height: ${LANDSCAPE_MAX_HEIGHT}px) and (pointer: coarse)`
+      );
+
+      this._betaMediaListener = () => {
+        this._applyBetaLayout();
+      };
+    }
+
+    setConfig(config) {
+      super.setConfig({
+        layout_mode: "auto",
+        ...config,
+      });
+
+      this._ensureBetaStyles();
+      this._applyBetaLayout();
+    }
+
+    connectedCallback() {
+      super.connectedCallback?.();
+
+      for (const query of [
+        this._betaPortraitQuery,
+        this._betaLandscapePhoneQuery,
+      ]) {
+        query.addEventListener?.(
+          "change",
+          this._betaMediaListener
+        );
+
+        // Safari / older WebView fallback.
+        query.addListener?.(
+          this._betaMediaListener
+        );
+      }
+
+      this._ensureBetaStyles();
+      this._applyBetaLayout();
+    }
+
+    disconnectedCallback() {
+      for (const query of [
+        this._betaPortraitQuery,
+        this._betaLandscapePhoneQuery,
+      ]) {
+        query.removeEventListener?.(
+          "change",
+          this._betaMediaListener
+        );
+
+        query.removeListener?.(
+          this._betaMediaListener
+        );
+      }
+
+      super.disconnectedCallback?.();
+    }
+
+    _ensureBetaStyles() {
+      if (!this.shadowRoot) return;
+
+      let style = this.shadowRoot.getElementById(
+        "house-power-flow-responsive-style"
+      );
+
+      if (!style) {
+        style = document.createElement("style");
+        style.id = "house-power-flow-responsive-style";
+        style.textContent = MOBILE_CSS;
+        this.shadowRoot.appendChild(style);
+      }
+    }
+
+    _resolvedLayoutMode() {
+      const requested = String(
+        this._config?.layout_mode || "auto"
+      ).toLowerCase();
+
+      if (requested === "mobile") return "mobile";
+      if (requested === "desktop") return "desktop";
+
+      if (this._betaLandscapePhoneQuery.matches) {
+        return "phone-landscape";
+      }
+
+      if (this._betaPortraitQuery.matches) {
+        return "mobile";
+      }
+
+      return "desktop";
+    }
+
+    _applyBetaLayout() {
+      const mode = this._resolvedLayoutMode();
+      const mobile = mode === "mobile";
+      const phoneLandscape = mode === "phone-landscape";
+      const desktop = mode === "desktop";
+
+      this.classList.toggle("mobile-layout", mobile);
+      this.classList.toggle("phone-landscape-layout", phoneLandscape);
+      this.classList.toggle("desktop-layout", desktop);
+
+      this.dataset.layoutMode = mode;
+
+      const scene = this.shadowRoot?.querySelector(".scene");
+      if (scene) {
+        scene.setAttribute(
+          "preserveAspectRatio",
+          phoneLandscape ? "xMidYMid meet" : "xMidYMid slice"
+        );
+      }
+    }
+
+    static getStubConfig() {
+      const base =
+        typeof BaseCard.getStubConfig === "function"
+          ? BaseCard.getStubConfig()
+          : {};
+
+      return {
+        ...base,
+        type: `custom:${BETA_TAG}`,
+        layout_mode: "auto",
+      };
+    }
+  }
+
+  customElements.define(
+    BETA_TAG,
+    HousePowerFlowCardBeta8
+  );
+
   window.customCards = window.customCards || [];
-  if (!window.customCards.some((card) => card.type === CARD_TAG)) {
+
+  if (
+    !window.customCards.some(
+      (card) => card.type === BETA_TAG
+    )
+  ) {
     window.customCards.push({
-      type: CARD_TAG,
+      type: BETA_TAG,
       name: "House Power Flow Card",
       description:
-        "Configurable Home Assistant power flows with optional modules and scenes.",
+        "Responsive power flow card with automatic portrait, phone-landscape and desktop layouts.",
       preview: true,
     });
   }
 
   console.info(
-      `%c HOUSE-POWER-FLOW-CARD %c v${VERSION} `,
-    "color:white;background:#2563eb;font-weight:700;padding:2px 5px",
-    "color:#2563eb;background:#dbeafe;font-weight:700;padding:2px 5px"
+    `%c HOUSE-POWER-FLOW-CARD %c v${VERSION} `,
+    "color:white;background:#7c3aed;font-weight:700;padding:2px 5px",
+    "color:#7c3aed;background:#ede9fe;font-weight:700;padding:2px 5px"
   );
 })();

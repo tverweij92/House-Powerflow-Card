@@ -2,8 +2,10 @@ type: custom:house-power-flow-card
 title: Energieoverzicht
 subtitle: Live status
 language: auto
+layout_mode: auto
 
 solar_power: sensor.your_solar_power
+home_power: sensor.your_current_home_consumption
 solar_production_today: sensor.your_solar_energy_today
 grid_power: sensor.your_signed_grid_power
 grid_import_today: sensor.your_grid_import_today
@@ -16,6 +18,9 @@ battery_charge_power: sensor.your_battery_charge_power
 battery_discharge_power: sensor.your_battery_discharge_power
 battery_soc: sensor.your_battery_soc
 battery_capacity_kwh: 7
+# Optional temporary AC charge estimate using one signed P1 phase:
+# battery_power_mode: phase_estimate
+# battery_phase_power: sensor.your_p1_phase_power
 
 modules:
   solar: true
@@ -33,6 +38,9 @@ holidays:
   enabled: true
   country: NL
   date_format: european
+  birthday:
+    enabled: true
+    date: "17-08"
   items:
     kerst:
       start: "18-12"
