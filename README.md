@@ -7,6 +7,20 @@ A visual Home Assistant dashboard card for live solar, grid, home and optional b
 [![License: MIT](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
 [![Support on Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/timverweij92)
 
+## Scene previews
+
+### All weather conditions
+
+![All weather scenes, including day and night variants](docs/showcases/weather-scenes.gif)
+
+### US holidays
+
+![US holiday scenes, including day and night variants](docs/showcases/us-holidays.gif)
+
+### Dutch holidays
+
+![Dutch holiday scenes, including day and night variants](docs/showcases/nl-holidays.gif)
+
 ![Real House Powerflow Card](docs/house-power-flow-card-real.gif)
 
 ![House Power Flow Card preview](docs/preview.png)
@@ -15,7 +29,8 @@ A visual Home Assistant dashboard card for live solar, grid, home and optional b
 
 - Solar and grid sensors; battery, gas and low-carbon data are optional.
 - Dutch or English automatically from Home Assistant, with starter translations for German, French and Spanish.
-- Holiday scenes on/off, per holiday on/off and editable start/end dates.
+- Holiday scenes on/off, per holiday on/off, editable dates, a configurable birthday scene, and Dutch or US country packs.
+- Responsive Beta 8 layout built into the normal production card for portrait, phone landscape and desktop.
 - Standard image alignment or your own flow paths/coordinates for a different house image.
 - A support button and popup that can be disabled or pointed at another donation page.
 - Existing `custom:energy-house-aligned-v47-card` dashboards remain compatible.
@@ -35,10 +50,11 @@ type: custom:house-power-flow-card
 title: Energy overview
 solar_power: sensor.your_solar_power
 grid_power: sensor.your_grid_power
+home_power: sensor.your_current_home_consumption
 weather: weather.home
 ```
 
-Replace the example entity IDs with your own entities. Battery, gas and holiday scenes stay out of the way until you configure them.
+Replace the example entity IDs with your own entities. `home_power` is optional but recommended when your integration provides a direct load-power sensor; otherwise the card calculates it from the other live flows. Battery, gas and holiday scenes stay out of the way until you configure them.
 
 ## Add a battery
 
@@ -49,6 +65,17 @@ battery_charge_power: sensor.battery_charge_power
 battery_discharge_power: sensor.battery_discharge_power
 battery_soc: sensor.battery_state_of_charge
 battery_capacity_kwh: 7
+```
+
+For an AC-coupled battery without a usable AC charge-power entity, a temporary
+per-phase estimate is available. The direct battery entities determine the
+direction; a positive P1 phase supplies estimated charging power. Discharge
+continues to use the direct battery entity because the P1 phase is already net
+of home loads. Estimated charging and home values are marked with `≈`:
+
+```yaml
+battery_power_mode: phase_estimate
+battery_phase_power: sensor.p1_meter_power_phase_1
 ```
 
 Set `modules.battery: false` to hide it even when battery sensors are present. With `auto` (the default), it appears only when at least one battery sensor is configured.
@@ -62,6 +89,9 @@ holidays:
   enabled: true
   country: NL
   date_format: european
+  birthday:
+    enabled: true
+    date: "17-08"
   items:
     kerst:
       enabled: true
@@ -71,7 +101,11 @@ holidays:
       enabled: false
 ```
 
-You can add your own fixed range. `image_name` must match the beginning of the supplied day/evening filenames:
+Birthday automatically selects `birthday-day.png` or `birthday-night.png` from `images/holidays/common`.
+
+Set `country: US` for automatic Independence Day (July 4), Memorial Day (last Monday in May), and Thanksgiving (fourth Thursday in November) scenes. Common scenes such as New Year, Valentine's Day, Easter, Halloween and Christmas continue to work for both countries.
+
+You can also add your own fixed range. `image_name` becomes the English, hyphenated beginning of the day/night filenames:
 
 ```yaml
 holidays:
@@ -79,13 +113,39 @@ holidays:
   date_format: european
   ranges:
     - name: birthday
-      image_name: feest
+      image_name: party
       start: "10-08"
       end: "14-08"
       enabled: true
 ```
 
-The card then looks for `feest overdag.png` and `feest avond.png` in `image_directory`.
+The card then looks for `party-day.png` and `party-night.png` in `images/holidays/common`.
+
+## Image folders
+
+Keep one central image directory and use these subfolders:
+
+```text
+images/
+|-- weather/
+`-- holidays/
+    |-- common/
+    |-- nl/
+    `-- us/
+```
+
+Future country packs can be added beside `nl`, for example `holidays/us` or `holidays/de`. All supplied filenames are lowercase English kebab-case without spaces. Existing flat Dutch filenames remain supported as a temporary fallback.
+
+Weather scene availability depends on the configured weather provider. Home Assistant defines `exceptional` as a standard state, but providers do not have to emit every standard state. For example, the current Buienradar integration has no source code mapped to `exceptional`, `hail`, `windy`, or `windy-variant`; those scenes remain available for other providers and template weather entities.
+
+From the Studio Code Server or OpenCode terminal in Home Assistant, safely preview the migration and then run it:
+
+```bash
+bash scripts/migrate-image-names.sh /homeassistant/www/house-power-flow-card/images --dry-run
+bash scripts/migrate-image-names.sh /homeassistant/www/house-power-flow-card/images
+```
+
+The script validates all destinations before moving anything and never overwrites an existing file. A PowerShell version with the same checks is included for Windows users.
 
 ## Use another house image
 
@@ -138,9 +198,11 @@ type: custom:house-power-flow-card
 
 After installing version 5 through HACS, change only the `type` line. Your existing sensor settings continue to work. Do not delete the old resource until the new card works on your dashboard.
 
+The separate `house-power-flow-card-beta8.js` resource is no longer needed from version 5.1 onward. Its responsive portrait and landscape behavior is included in `house-power-flow-card.js`.
+
 ## Development and contributions
 
-The project intentionally uses one dependency-free JavaScript file so beginners can inspect it. Pull requests run a syntax check, verify HACS metadata and check the image set. Translation contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
+Home Assistant loads one dependency-free production file. The readable source is split into a base and responsive layer under `src`; `node scripts/build-card.cjs` rebuilds the production and distribution files. Pull requests run a syntax check, verify HACS metadata and check the image set. Translation contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

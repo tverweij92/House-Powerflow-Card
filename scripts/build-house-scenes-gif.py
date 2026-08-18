@@ -11,27 +11,6 @@ OUTPUT = ROOT / "docs" / "house-scenes.gif"
 SIZE = (640, 427)
 FRAME_DURATION_MS = 750
 
-SCENES = [
-    "zon",
-    "bewolkt",
-    "regen",
-    "sneeuw",
-    "-5",
-    "25plus",
-    "nieuwjaar",
-    "pasen",
-    "koningsdag",
-    "dodenherdenking",
-    "bevrijdingsdag",
-    "moederdag",
-    "hemelvaart",
-    "pinksteren",
-    "vaderdag",
-    "sinterklaas",
-    "kerst",
-]
-
-
 def build_frame(path: Path) -> Image.Image:
     with Image.open(path) as source:
         resized = source.convert("RGB").resize(SIZE, Image.Resampling.LANCZOS)
@@ -39,10 +18,9 @@ def build_frame(path: Path) -> Image.Image:
 
 
 def main() -> None:
-    expected = [SOURCE / f"{scene} {time}.png" for scene in SCENES for time in ("overdag", "avond")]
-    missing = [path.name for path in expected if not path.is_file()]
-    if missing:
-        raise FileNotFoundError(f"Missing scene images: {', '.join(missing)}")
+    expected = sorted(SOURCE.rglob("*.png"), key=lambda path: path.as_posix())
+    if not expected:
+        raise FileNotFoundError("No scene images found")
 
     frames = [build_frame(path) for path in expected]
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

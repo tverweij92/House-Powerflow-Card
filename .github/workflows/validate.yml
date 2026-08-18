@@ -44,7 +44,10 @@ jobs:
       - name: Verify weather image set
         shell: bash
         run: |
-          source_count="$(find images -maxdepth 1 -type f -name '*.png' | wc -l)"
-          dist_count="$(find dist/images -maxdepth 1 -type f -name '*.png' | wc -l)"
-          test "$source_count" -eq 34
-          test "$dist_count" -eq 34
+          source_count="$(find images -type f -name '*.png' | wc -l)"
+          test "$source_count" -eq 64
+          test "$(find images/weather -type f -name '*.png' | wc -l)" -eq 28
+          test "$(find images/holidays/common -type f -name '*.png' | wc -l)" -eq 20
+          test "$(find images/holidays/nl -type f -name '*.png' | wc -l)" -eq 10
+          test "$(find images/holidays/us -type f -name '*.png' | wc -l)" -eq 6
+          test ! -d dist/images
